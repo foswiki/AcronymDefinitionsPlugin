@@ -26,7 +26,7 @@ our $NO_PREFS_IN_TOPIC = 1;
 
 # Module variables used between functions within this module
 my $disabled = 0;
-my $web;    # preRenderingHandler needs current web - passed from initPlugin
+my $web;
 my $user;   # For access control checking - passed from initPlugin
 my %prefs;
 my $debug;
@@ -77,7 +77,7 @@ sub initPlugin {
 
 #=============
 
-sub preRenderingHandler {
+sub postRenderingHandler {
 
     return if ($disabled);
 
@@ -86,34 +86,6 @@ sub preRenderingHandler {
     # Lookbehind/lookahead WikiWord delimiters taken from Foswiki::Render
     my $STARTWW = qr/^|(?<=[\s\(])/m;
     my $ENDWW   = qr/$|(?=[^[:alpha:][:digit:]])/m;
-
-    my $renderer         = $Foswiki::Plugins::SESSION->renderer();
-    my $removedTextareas = {};
-    my $removedProtected = {};
-
-# SMELL: Directly calling Foswiki and Render functions is not recommended.
-# This needs to be validated for any major changes in Foswiki.
-# Tested on 1.0.9 and 1.1.0 trunk.
-# Determine which release of Foswiki in use -
-# R1.1 moved takeOutBlocks into Foswiki proper
-
-    # Remove any <noautolink> blocks from the topic
-    eval( '$renderer->takeOutBlocks( $_[0], \'noautolink\', $removedTextareas )' );
-    if ( $@ ne "" ) {
-        $_[0] =
-          Foswiki::takeOutBlocks( $_[0], 'noautolink', $removedTextareas );
-    }
-
-    # Also remove any forced links from the topic.
-    $_[0] =
-      $renderer->_takeOutProtected( $_[0], qr/\[\[(?:.*?)\]\]/si,
-        'wikilink', $removedProtected );
-    $_[0] =
-      $renderer->_takeOutProtected( $_[0], qr/<a\s(?:.*?)<\/a>/si,
-        'htmllink', $removedProtected );
-
-    my $topic;
-    my $session;
 
     if ($acronymDefinitions) {
 
@@ -154,19 +126,17 @@ sub preRenderingHandler {
            /geox;
     }
 
-    # Need to put back everything in the reverse order that it was removed.
-    $renderer->_putBackProtected( \$_[0], 'htmllink', $removedProtected );
-    $renderer->_putBackProtected( \$_[0], 'wikilink', $removedProtected );
+    # Fix content of 'title' tag if broken by preceding.
+    $_[0] =~ s| <title>(.*)
+                <acronym[^>]+>
+                ([^<]+)
+                </acronym>
+                (.*)
+                </title>
+              | <title>$1$2$3</title>
+              |x;
 
-    # Put back everything that was removed
-    if ($@) {
-        Foswiki::putBackBlocks( \$_[0], $removedTextareas, 'noautolink',
-            'noautolink' );
-    }
-    else {
-        $renderer->putBackBlocks( \$_[0], $removedTextareas, 'noautolink',
-            'noautolink' );
-    }
+
 }
 
 sub _populateAcronymsHash {
