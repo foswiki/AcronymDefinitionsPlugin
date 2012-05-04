@@ -27,7 +27,7 @@ our $NO_PREFS_IN_TOPIC = 1;
 # Module variables used between functions within this module
 my $disabled = 0;
 my $web;
-my $user;   # For access control checking - passed from initPlugin
+my $user;    # For access control checking - passed from initPlugin
 my %prefs;
 my $debug;
 
@@ -45,7 +45,7 @@ BEGIN {
 sub initPlugin {
 
     my $topic = $_[0];
-    $web = $_[1];
+    $web  = $_[1];
     $user = $_[2];
     my $installWeb = $_[3];
 
@@ -57,10 +57,10 @@ sub initPlugin {
     }
 
     # Get plugin debug flag
-    $debug = Foswiki::Func::getPreferencesFlag("ACRONYMDEFINITIONSPLUGIN_DEBUG");
+    $debug =
+      Foswiki::Func::getPreferencesFlag("ACRONYMDEFINITIONSPLUGIN_DEBUG");
 
-    Foswiki::Func::writeDebug(
-    "ACRONYMDEFINITIONSPLUGIN_DEBUG is enabled")
+    Foswiki::Func::writeDebug("ACRONYMDEFINITIONSPLUGIN_DEBUG is enabled")
       if $debug;
 
     $prefs{'acronymDefinitions'} =
@@ -89,35 +89,47 @@ sub postRenderingHandler {
 
     if ($acronymDefinitions) {
 
-    $acronymDefinitions =~ m|^(?:(.*)\.)?(.*)$|;
-    my $acronymDefinitionsWeb = $1;
-    my $acronymDefinitionsTopic = $2;
+        $acronymDefinitions =~ m|^(?:(.*)\.)?(.*)$|;
+        my $acronymDefinitionsWeb   = $1;
+        my $acronymDefinitionsTopic = $2;
 
-    if ($acronymDefinitionsWeb eq '') { undef $acronymDefinitionsWeb; }
+        if ( $acronymDefinitionsWeb eq '' ) { undef $acronymDefinitionsWeb; }
 
-    # Check topic exists, exit if not.
-    unless (Foswiki::Func::topicExists( $acronymDefinitionsWeb, $acronymDefinitionsTopic)) {
-        Foswiki::Func::writeDebug(
-            "Specified acronym definition topic doesn't exist, exiting")
-          if $debug;
-        return;
-    }
+        # Check topic exists, exit if not.
+        unless (
+            Foswiki::Func::topicExists(
+                $acronymDefinitionsWeb, $acronymDefinitionsTopic
+            )
+          )
+        {
+            Foswiki::Func::writeDebug(
+                "Specified acronym definition topic doesn't exist, exiting")
+              if $debug;
+            return;
+        }
 
-    # Check current user can view the topic, exit if not.
-    unless (Foswiki::Func::checkAccessPermission( 'VIEW', $user, undef, $acronymDefinitionsTopic, $acronymDefinitionsWeb, undef )) {
-        Foswiki::Func::writeDebug(
-            "Specified acronym definition topic not viewable by current user, exiting")
-          if $debug;
-        return;
-    }
+        # Check current user can view the topic, exit if not.
+        unless (
+            Foswiki::Func::checkAccessPermission(
+                'VIEW', $user, undef, $acronymDefinitionsTopic,
+                $acronymDefinitionsWeb, undef
+            )
+          )
+        {
+            Foswiki::Func::writeDebug(
+"Specified acronym definition topic not viewable by current user, exiting"
+            ) if $debug;
+            return;
+        }
 
-    undef %acronyms;
-    Foswiki::Func::writeDebug("Cleared acronyms") if $debug;
+        undef %acronyms;
+        Foswiki::Func::writeDebug("Cleared acronyms") if $debug;
 
-    _populateAcronymsHash( $acronymDefinitionsWeb, $acronymDefinitionsTopic );
+        _populateAcronymsHash( $acronymDefinitionsWeb,
+            $acronymDefinitionsTopic );
 
-    # 'abbrevRegex' matches things we consider acronyms.
-    $_[0] =~ s/(
+        # 'abbrevRegex' matches things we consider acronyms.
+        $_[0] =~ s/(
             $STARTWW                            # Prefix
             (?:$Foswiki::regex{'abbrevRegex'})  # Acronym
             $ENDWW                              # Suffix
@@ -136,12 +148,11 @@ sub postRenderingHandler {
               | <title>$1$2$3</title>
               |x;
 
-
 }
 
 sub _populateAcronymsHash {
 
-    my $acronymDefinitionsWeb = $_[0];
+    my $acronymDefinitionsWeb   = $_[0];
     my $acronymDefinitionsTopic = $_[1];
     my $meta;
     my $text;
@@ -150,7 +161,8 @@ sub _populateAcronymsHash {
 
     Foswiki::Func::writeDebug("Populating acronyms hash") if $debug;
 
-    ($meta, $text) = Foswiki::Func::readTopic( $acronymDefinitionsWeb, $acronymDefinitionsTopic, undef );
+    ( $meta, $text ) = Foswiki::Func::readTopic( $acronymDefinitionsWeb,
+        $acronymDefinitionsTopic, undef );
 
     my @entries = split /\n/, $text;
 
@@ -163,7 +175,7 @@ sub _populateAcronymsHash {
         Foswiki::Func::writeDebug("Acronym: $1; Definition: $2") if $debug;
 
         $acronym = $1;
-        if ($2 ne '') {
+        if ( $2 ne '' ) {
             $definition = $2;
         }
         else {
@@ -179,14 +191,14 @@ sub _populateAcronymsHash {
 sub _wrapAcronym {
 
     if ( exists $acronyms{ $_[0] } ) {
-    Foswiki::Func::writeDebug(" -- Wrapping $_[0]")
-      if $debug;
+        Foswiki::Func::writeDebug(" -- Wrapping $_[0]")
+          if $debug;
         return "<acronym title='$acronyms{$_[0]}'>" . $_[0] . "</acronym>";
     }
     else {
         Foswiki::Func::writeDebug(
-        " -- No definition found for acronym - returning $_[0] ")
-      if $debug;
+            " -- No definition found for acronym - returning $_[0] ")
+          if $debug;
         return $_[0];
     }
 }
